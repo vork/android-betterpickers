@@ -1,27 +1,31 @@
+/local.properties
+.DS_Store
+
+# built application files
 *.apk
 *.ap_
+
+# files for the dex VM
 *.dex
+
+# Java class files
 *.class
-*.iml
-.gitignore~
-.idea/
-.DS_STORE
-.classpath
-.settings/
+
+# generated files
 bin/
 gen/
-local.properties
-target/
-classes/
-gen-external-apklibs/
-out/
-tmp/
-.project
-target
-release.properties
-pom.xml.*
 
-#Command line
-local.properties
-build.xml
-proguard-project.txt
+# Eclipse project files
+.classpath
+.project
+
+# Android Studio
+/*/build
+/*/production
+/*/*/build
+/*/*/production
+*.iml
+*.ipr
+*.iws
+.idea/
+.gradle
