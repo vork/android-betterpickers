@@ -1,11 +1,11 @@
 package com.doomonafireball.betterpickers.sample.fragment;
 
-import com.actionbarsherlock.app.SherlockFragment;
+import com.doomonafireball.betterpickers.hmspicker.HmsPickerBuilder;
+import com.doomonafireball.betterpickers.hmspicker.HmsPickerDialogFragment;
 import com.doomonafireball.betterpickers.sample.R;
-import com.doomonafireball.betterpickers.timepicker.TimePickerBuilder;
-import com.doomonafireball.betterpickers.timepicker.TimePickerDialogFragment;
 
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,8 +15,8 @@ import android.widget.TextView;
 /**
  * User: derek Date: 4/30/13 Time: 7:43 PM
  */
-public class SampleTimeFragment extends SherlockFragment
-        implements TimePickerDialogFragment.TimePickerDialogHandler {
+public class SampleHmsFragment extends Fragment
+        implements HmsPickerDialogFragment.HmsPickerDialogHandler {
 
     private TextView text;
     private Button button;
@@ -29,15 +29,15 @@ public class SampleTimeFragment extends SherlockFragment
         button = (Button) view.findViewById(R.id.button);
 
         text.setText("--");
-        button.setText("Set Time");
+        button.setText("Set Number");
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                TimePickerBuilder tpb = new TimePickerBuilder()
+                HmsPickerBuilder hpb = new HmsPickerBuilder()
                         .setFragmentManager(getChildFragmentManager())
                         .setStyleResId(R.style.BetterPickersDialogFragment)
-                        .setTargetFragment(SampleTimeFragment.this);
-                tpb.show();
+                        .setTargetFragment(SampleHmsFragment.this);
+                hpb.show();
             }
         });
 
@@ -45,7 +45,7 @@ public class SampleTimeFragment extends SherlockFragment
     }
 
     @Override
-    public void onDialogTimeSet(int reference, int hourOfDay, int minute) {
-        text.setText("" + hourOfDay + ":" + minute);
+    public void onDialogHmsSet(int reference, int hours, int minutes, int seconds) {
+        text.setText("" + hours + ":" + minutes + ":" + seconds);
     }
 }

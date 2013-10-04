@@ -1,11 +1,11 @@
 package com.doomonafireball.betterpickers.sample.fragment;
 
-import com.actionbarsherlock.app.SherlockFragment;
-import com.doomonafireball.betterpickers.hmspicker.HmsPickerBuilder;
-import com.doomonafireball.betterpickers.hmspicker.HmsPickerDialogFragment;
+import com.doomonafireball.betterpickers.datepicker.DatePickerBuilder;
+import com.doomonafireball.betterpickers.datepicker.DatePickerDialogFragment;
 import com.doomonafireball.betterpickers.sample.R;
 
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,8 +15,8 @@ import android.widget.TextView;
 /**
  * User: derek Date: 4/30/13 Time: 7:43 PM
  */
-public class SampleHmsFragment extends SherlockFragment
-        implements HmsPickerDialogFragment.HmsPickerDialogHandler {
+public class SampleDateFragment extends Fragment
+        implements DatePickerDialogFragment.DatePickerDialogHandler {
 
     private TextView text;
     private Button button;
@@ -29,23 +29,24 @@ public class SampleHmsFragment extends SherlockFragment
         button = (Button) view.findViewById(R.id.button);
 
         text.setText("--");
-        button.setText("Set Number");
+        button.setText("Set Date");
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                HmsPickerBuilder hpb = new HmsPickerBuilder()
+                DatePickerBuilder dpb = new DatePickerBuilder()
                         .setFragmentManager(getChildFragmentManager())
                         .setStyleResId(R.style.BetterPickersDialogFragment)
-                        .setTargetFragment(SampleHmsFragment.this);
-                hpb.show();
+                        .setTargetFragment(SampleDateFragment.this);
+                dpb.show();
             }
         });
 
         return view;
     }
 
+
     @Override
-    public void onDialogHmsSet(int reference, int hours, int minutes, int seconds) {
-        text.setText("" + hours + ":" + minutes + ":" + seconds);
+    public void onDialogDateSet(int reference, int year, int monthOfYear, int dayOfMonth) {
+        text.setText("Year: " + year + "\nMonth: " + monthOfYear + "\nDay: " + dayOfMonth);
     }
 }
