@@ -1,7 +1,5 @@
 package com.doomonafireball.betterpickers.numberpicker;
 
-import com.doomonafireball.betterpickers.R;
-
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.content.res.Resources;
@@ -17,38 +15,36 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.doomonafireball.betterpickers.R;
+
 import java.math.BigDecimal;
 
 public class NumberPicker extends LinearLayout implements Button.OnClickListener,
         Button.OnLongClickListener {
 
-    protected int mInputSize = 20;
+    private static final int CLICKED_DECIMAL = 10;
+    private static final int SIGN_POSITIVE = 0;
+    private static final int SIGN_NEGATIVE = 1;
     protected final Button mNumbers[] = new Button[10];
+    protected final Context mContext;
+    protected int mInputSize = 20;
     protected int mInput[] = new int[mInputSize];
     protected int mInputPointer = -1;
     protected Button mLeft, mRight;
     protected ImageButton mDelete;
     protected NumberView mEnteredNumber;
-    protected final Context mContext;
-
+    protected View mDivider;
     private TextView mLabel;
     private NumberPickerErrorTextView mError;
     private int mSign;
     private String mLabelText = "";
     private Button mSetButton;
-    private static final int CLICKED_DECIMAL = 10;
-
-    private static final int SIGN_POSITIVE = 0;
-    private static final int SIGN_NEGATIVE = 1;
-
-    protected View mDivider;
     private ColorStateList mTextColor;
     private int mKeyBackgroundResId;
     private int mButtonBackgroundResId;
     private int mDividerColor;
     private int mDeleteDrawableSrcResId;
     private int mTheme = -1;
-
     private Integer mMinNumber = null;
     private Integer mMaxNumber = null;
 
@@ -65,7 +61,7 @@ public class NumberPicker extends LinearLayout implements Button.OnClickListener
      * Instantiates a NumberPicker object
      *
      * @param context the Context required for creation
-     * @param attrs additional attributes that define custom colors, selectors, and backgrounds.
+     * @param attrs   additional attributes that define custom colors, selectors, and backgrounds.
      */
     public NumberPicker(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -302,12 +298,48 @@ public class NumberPicker extends LinearLayout implements Button.OnClickListener
     private void updateKeypad() {
         // Update state of keypad
         // Update the number
-        updateLeftRightButtons();
         updateNumber();
+        // enable/disable the left and right buttons
+        updateLeftRightButtons();
+        // enable/disable numeric keys according to the numbers entered already
+        updateNumericKeys();
         // enable/disable the "set" key
         enableSetButton();
         // Update the backspace button
         updateDeleteButton();
+    }
+
+    private void updateNumericKeys() {
+        if (mMaxNumber == null || mMinNumber == null || getIsNegative()) {
+            setKeyRange(0, 9);
+            return;
+        }
+
+        if (containsDecimal()) {
+            double enteredNumber = getEnteredNumber();
+            int minKey = 0;
+            int maxKey = (enteredNumber < mMaxNumber) ? 9 : 0;
+            setKeyRange(minKey, maxKey);
+        } else {
+            int number = getNumber();
+            if (number == 0) {
+                int minKey = (getEnteredNumberString().equals("") && mMaxNumber >= 0 && mMinNumber <= 0) ? 0 : 1;
+                int maxKey = mMaxNumber <= 9 ? mMaxNumber : 9;
+                setKeyRange(minKey, maxKey);
+            } else {
+                number = mMaxNumber - (number * 10);
+                int minKey = 0;
+                int maxKey = number >= 0 ? (number <= 9 ? number : 9) : -1;
+                setKeyRange(minKey, maxKey);
+            }
+        }
+    }
+
+    // enables a range of numeric keys from minKey to maxKey. The rest of the keys will be disabled
+    private void setKeyRange(int minKey, int maxKey) {
+        for (int i = 0; i < mNumbers.length; i++) {
+            mNumbers[i].setEnabled(minKey <= i && i <= maxKey);
+        }
     }
 
     /**
@@ -359,7 +391,7 @@ public class NumberPicker extends LinearLayout implements Button.OnClickListener
     }
 
     protected void setLeftRightEnabled() {
-        mLeft.setEnabled(true);
+        mLeft.setEnabled(canInvert());
         mRight.setEnabled(canAddDecimal());
         if (!canAddDecimal()) {
             mRight.setContentDescription(null);
@@ -385,10 +417,12 @@ public class NumberPicker extends LinearLayout implements Button.OnClickListener
      * Clicking on the bottom left button will toggle the sign.
      */
     private void onLeftClicked() {
-        if (mSign == SIGN_POSITIVE) {
-            mSign = SIGN_NEGATIVE;
-        } else {
-            mSign = SIGN_POSITIVE;
+        if (canInvert()) {
+            if (mSign == SIGN_POSITIVE) {
+                mSign = SIGN_NEGATIVE;
+            } else {
+                mSign = SIGN_POSITIVE;
+            }
         }
     }
 
@@ -417,7 +451,26 @@ public class NumberPicker extends LinearLayout implements Button.OnClickListener
      * @return true or false if the user is able to add a decimal or not
      */
     private boolean canAddDecimal() {
+        if (mMaxNumber != null && getEnteredNumber() == mMaxNumber) {
+            return false;
+        }
         return !containsDecimal();
+    }
+
+    /**
+     * Checks if the user allowed to click on the left button.
+     *
+     * @return true or false if the user is able to add a decimal or not
+     */
+    private boolean canInvert() {
+        double invertedNumber = getEnteredNumber() * -1;
+        if (mMinNumber != null && invertedNumber < mMinNumber) {
+            return false;
+        }
+        if (mMaxNumber != null && invertedNumber > mMaxNumber) {
+            return false;
+        }
+        return true;
     }
 
     private String getEnteredNumberString() {
@@ -458,6 +511,7 @@ public class NumberPicker extends LinearLayout implements Button.OnClickListener
 
     private void updateLeftRightButtons() {
         mRight.setEnabled(canAddDecimal());
+        mLeft.setEnabled(canInvert());
     }
 
     /**
@@ -472,6 +526,14 @@ public class NumberPicker extends LinearLayout implements Button.OnClickListener
         if (mInputPointer == -1) {
             mSetButton.setEnabled(false);
             return;
+        }
+
+        // If the value is too low
+        if(mMinNumber != null) {
+            if(getNumber() < mMinNumber) {
+                mSetButton.setEnabled(false);
+                return;
+            }
         }
 
         // If the user entered 1 digits or more
@@ -550,6 +612,16 @@ public class NumberPicker extends LinearLayout implements Button.OnClickListener
 
     private static class SavedState extends BaseSavedState {
 
+        public static final Creator<SavedState> CREATOR
+                = new Creator<SavedState>() {
+            public SavedState createFromParcel(Parcel in) {
+                return new SavedState(in);
+            }
+
+            public SavedState[] newArray(int size) {
+                return new SavedState[size];
+            }
+        };
         int mInputPointer;
         int[] mInput;
         int mSign;
@@ -572,16 +644,5 @@ public class NumberPicker extends LinearLayout implements Button.OnClickListener
             dest.writeIntArray(mInput);
             dest.writeInt(mSign);
         }
-
-        public static final Creator<SavedState> CREATOR
-                = new Creator<SavedState>() {
-            public SavedState createFromParcel(Parcel in) {
-                return new SavedState(in);
-            }
-
-            public SavedState[] newArray(int size) {
-                return new SavedState[size];
-            }
-        };
     }
 }
