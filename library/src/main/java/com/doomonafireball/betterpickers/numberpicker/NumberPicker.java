@@ -352,7 +352,8 @@ public class NumberPicker extends LinearLayout implements Button.OnClickListener
                     setKeyRange(minKey, maxKey);
                 }
             } else {
-                int usedMin = 0;
+                int usedMin;
+                int usedMax;
                 mSteppingList = new ArrayList<Integer>();
                 if (mMinNumber == null) {
                     mMinNumber = 0;
@@ -361,16 +362,23 @@ public class NumberPicker extends LinearLayout implements Button.OnClickListener
                     mMaxNumber = Integer.MAX_VALUE;
                 }
                 usedMin = mMinNumber;
+                usedMax = mMaxNumber;
                 if (number > 0) {
                     usedMin = number * 10;
 
                     if (usedMin > mMaxNumber) { //Can't be higher than MaxNumber
                         usedMin = mMaxNumber - mStepping;
                     }
+
+                    int num = (number + 1) * 10 - 1;
+                    while (num <= mMaxNumber) {
+                        usedMax = num;
+                        num *= 10;
+                    }
                 }
                 //Get start and end values for the Stepping lists
                 int startValue = (int) Math.ceil(usedMin / (float) mStepping);
-                int endValue = (int) Math.floor(mMaxNumber / (float) mStepping);
+                int endValue = (int) Math.floor(usedMax / (float) mStepping);
                 for (int i = startValue; i <= endValue; i++) {
                     mSteppingList.add(i * mStepping);
                 }
@@ -383,12 +391,12 @@ public class NumberPicker extends LinearLayout implements Button.OnClickListener
                 }
 
                 HashSet<Integer> possibleDigits = new HashSet<Integer>(); //Stores the possible digits
-                for (int j = getDigitCount(getNumber()) - 1; j <= (getDigitCount(mMaxNumber) -
+                for (int j = 1; j <= (getDigitCount(mMaxNumber) -
                         getEnteredNumberString().length()); j++) { //Loop through all possible digit positions
                     int toAdd;
                     for (int i = 0; i < mSteppingList.size(); i++) {
                         int num = mSteppingList.get(i);
-                        if (j > 1) {
+                        if (j > 1 && mSteppingList.size() != 1) {
                             toAdd = (int) (Math.floor(num / Math.pow(10, j - 1)) -
                                     10 * Math.floor(num / Math.pow(10, j)));
                         } else {
