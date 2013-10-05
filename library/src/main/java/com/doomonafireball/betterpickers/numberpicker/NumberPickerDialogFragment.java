@@ -1,7 +1,5 @@
 package com.doomonafireball.betterpickers.numberpicker;
 
-import com.doomonafireball.betterpickers.R;
-
 import android.app.Activity;
 import android.content.res.ColorStateList;
 import android.content.res.TypedArray;
@@ -12,6 +10,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+
+import com.doomonafireball.betterpickers.R;
 
 import java.util.Vector;
 
@@ -24,13 +24,12 @@ public class NumberPickerDialogFragment extends DialogFragment {
     private static final String THEME_RES_ID_KEY = "NumberPickerDialogFragment_ThemeResIdKey";
     private static final String MIN_NUMBER_KEY = "NumberPickerDialogFragment_MinNumberKey";
     private static final String MAX_NUMBER_KEY = "NumberPickerDialogFragment_MaxNumberKey";
+    private static final String STEPPING_KEY = "NumberPickerDialogFragment_SteppingKey";
     private static final String PLUS_MINUS_VISIBILITY_KEY = "NumberPickerDialogFragment_PlusMinusVisibilityKey";
     private static final String DECIMAL_VISIBILITY_KEY = "NumberPickerDialogFragment_DecimalVisibilityKey";
     private static final String LABEL_TEXT_KEY = "NumberPickerDialogFragment_LabelTextKey";
-
     private Button mSet, mCancel;
     private NumberPicker mPicker;
-
     private View mDividerOne, mDividerTwo;
     private int mReference = -1;
     private int mTheme = -1;
@@ -39,9 +38,9 @@ public class NumberPickerDialogFragment extends DialogFragment {
     private String mLabelText = "";
     private int mButtonBackgroundResId;
     private int mDialogBackgroundResId;
-
     private Integer mMinNumber = null;
     private Integer mMaxNumber = null;
+    private Integer mStepping = null;
     private int mPlusMinusVisibility = View.VISIBLE;
     private int mDecimalVisibility = View.VISIBLE;
     private Vector<NumberPickerDialogHandler> mNumberPickerDialogHandlers = new Vector<NumberPickerDialogHandler>();
@@ -49,17 +48,17 @@ public class NumberPickerDialogFragment extends DialogFragment {
     /**
      * Create an instance of the Picker (used internally)
      *
-     * @param reference an (optional) user-defined reference, helpful when tracking multiple Pickers
-     * @param themeResId the style resource ID for theming
-     * @param minNumber (optional) the minimum possible number
-     * @param maxNumber (optional) the maximum possible number
+     * @param reference           an (optional) user-defined reference, helpful when tracking multiple Pickers
+     * @param themeResId          the style resource ID for theming
+     * @param minNumber           (optional) the minimum possible number
+     * @param maxNumber           (optional) the maximum possible number
      * @param plusMinusVisibility (optional) View.VISIBLE, View.INVISIBLE, or View.GONE
-     * @param decimalVisibility (optional) View.VISIBLE, View.INVISIBLE, or View.GONE
-     * @param labelText (optional) text to add as a label
+     * @param decimalVisibility   (optional) View.VISIBLE, View.INVISIBLE, or View.GONE
+     * @param labelText           (optional) text to add as a label
      * @return a Picker!
      */
     public static NumberPickerDialogFragment newInstance(int reference, int themeResId, Integer minNumber,
-            Integer maxNumber, Integer plusMinusVisibility, Integer decimalVisibility, String labelText) {
+                                                         Integer maxNumber, Integer stepping, Integer plusMinusVisibility, Integer decimalVisibility, String labelText) {
         final NumberPickerDialogFragment frag = new NumberPickerDialogFragment();
         Bundle args = new Bundle();
         args.putInt(REFERENCE_KEY, reference);
@@ -69,6 +68,9 @@ public class NumberPickerDialogFragment extends DialogFragment {
         }
         if (maxNumber != null) {
             args.putInt(MAX_NUMBER_KEY, maxNumber);
+        }
+        if (stepping != null) {
+            args.putInt(STEPPING_KEY, stepping);
         }
         if (plusMinusVisibility != null) {
             args.putInt(PLUS_MINUS_VISIBILITY_KEY, plusMinusVisibility);
@@ -111,6 +113,9 @@ public class NumberPickerDialogFragment extends DialogFragment {
         if (args != null && args.containsKey(MAX_NUMBER_KEY)) {
             mMaxNumber = args.getInt(MAX_NUMBER_KEY);
         }
+        if (args != null && args.containsKey(STEPPING_KEY)) {
+            mStepping = args.getInt(STEPPING_KEY);
+        }
         if (args != null && args.containsKey(LABEL_TEXT_KEY)) {
             mLabelText = args.getString(LABEL_TEXT_KEY);
         }
@@ -138,7 +143,7 @@ public class NumberPickerDialogFragment extends DialogFragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
-            Bundle savedInstanceState) {
+                             Bundle savedInstanceState) {
 
         View v = inflater.inflate(R.layout.number_picker_dialog, null);
         mSet = (Button) v.findViewById(R.id.set_button);
@@ -171,8 +176,21 @@ public class NumberPickerDialogFragment extends DialogFragment {
                     mPicker.getErrorView().show();
                     return;
                 }
+
+                // Extra layer of safety only return values which use the stepping correctly
+                int partNumber = mPicker.getNumber();
+                if (mStepping != null) {
+                    if (number % mStepping != 0) {
+                        if (number % mStepping <= (mStepping / 2)) {
+                            number = number - (number % mStepping);
+                        } else {
+                            number = number + (number % mStepping);
+                        }
+                        partNumber = (int) number;
+                    }
+                }
                 for (NumberPickerDialogHandler handler : mNumberPickerDialogHandlers) {
-                    handler.onDialogNumberSet(mReference, mPicker.getNumber(), mPicker.getDecimal(),
+                    handler.onDialogNumberSet(mReference, partNumber, mPicker.getDecimal(),
                             mPicker.getIsNegative(), number);
                 }
                 final Activity activity = getActivity();
@@ -180,11 +198,11 @@ public class NumberPickerDialogFragment extends DialogFragment {
                 if (activity instanceof NumberPickerDialogHandler) {
                     final NumberPickerDialogHandler act =
                             (NumberPickerDialogHandler) activity;
-                    act.onDialogNumberSet(mReference, mPicker.getNumber(), mPicker.getDecimal(),
+                    act.onDialogNumberSet(mReference, partNumber, mPicker.getDecimal(),
                             mPicker.getIsNegative(), number);
                 } else if (fragment instanceof NumberPickerDialogHandler) {
                     final NumberPickerDialogHandler frag = (NumberPickerDialogHandler) fragment;
-                    frag.onDialogNumberSet(mReference, mPicker.getNumber(), mPicker.getDecimal(),
+                    frag.onDialogNumberSet(mReference, partNumber, mPicker.getDecimal(),
                             mPicker.getIsNegative(), number);
                 }
                 dismiss();
@@ -211,16 +229,11 @@ public class NumberPickerDialogFragment extends DialogFragment {
         if (mMaxNumber != null) {
             mPicker.setMax(mMaxNumber);
         }
+        if (mStepping != null) {
+            mPicker.setStepping(mStepping);
+        }
 
         return v;
-    }
-
-    /**
-     * This interface allows objects to register for the Picker's set action.
-     */
-    public interface NumberPickerDialogHandler {
-
-        void onDialogNumberSet(int reference, int number, double decimal, boolean isNegative, double fullNumber);
     }
 
     /**
@@ -230,5 +243,13 @@ public class NumberPickerDialogFragment extends DialogFragment {
      */
     public void setNumberPickerDialogHandlers(Vector<NumberPickerDialogHandler> handlers) {
         mNumberPickerDialogHandlers = handlers;
+    }
+
+    /**
+     * This interface allows objects to register for the Picker's set action.
+     */
+    public interface NumberPickerDialogHandler {
+
+        void onDialogNumberSet(int reference, int number, double decimal, boolean isNegative, double fullNumber);
     }
 }

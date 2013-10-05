@@ -18,6 +18,9 @@ import android.widget.TextView;
 import com.doomonafireball.betterpickers.R;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
 
 public class NumberPicker extends LinearLayout implements Button.OnClickListener,
         Button.OnLongClickListener {
@@ -47,6 +50,8 @@ public class NumberPicker extends LinearLayout implements Button.OnClickListener
     private int mTheme = -1;
     private Integer mMinNumber = null;
     private Integer mMaxNumber = null;
+    private Integer mStepping = null;
+    private ArrayList<Integer> mSteppingList = null;
 
     /**
      * Instantiates a NumberPicker object
@@ -223,6 +228,7 @@ public class NumberPicker extends LinearLayout implements Button.OnClickListener
      */
     public void setMin(int min) {
         mMinNumber = min;
+        updateKeypad();
     }
 
     /**
@@ -232,6 +238,18 @@ public class NumberPicker extends LinearLayout implements Button.OnClickListener
      */
     public void setMax(int max) {
         mMaxNumber = max;
+        updateKeypad();
+    }
+
+    /**
+     * Only makes incrementing in this stepping possible
+     *
+     * @param stepping the stepping value
+     */
+    public void setStepping(int stepping) {
+        mStepping = stepping;
+        mSteppingList = null; //Reset the list
+        updateKeypad();
     }
 
     /**
@@ -310,7 +328,7 @@ public class NumberPicker extends LinearLayout implements Button.OnClickListener
     }
 
     private void updateNumericKeys() {
-        if (mMaxNumber == null || mMinNumber == null || getIsNegative()) {
+        if (mMaxNumber == null || mMinNumber == null || mStepping == null || getIsNegative()) {
             setKeyRange(0, 9);
             return;
         }
@@ -322,24 +340,116 @@ public class NumberPicker extends LinearLayout implements Button.OnClickListener
             setKeyRange(minKey, maxKey);
         } else {
             int number = getNumber();
-            if (number == 0) {
-                int minKey = (getEnteredNumberString().equals("") && mMaxNumber >= 0 && mMinNumber <= 0) ? 0 : 1;
-                int maxKey = mMaxNumber <= 9 ? mMaxNumber : 9;
-                setKeyRange(minKey, maxKey);
+            if (mStepping == null) {
+                if (number == 0) {
+                    int minKey = (getEnteredNumberString().equals("") && mMaxNumber >= 0 && mMinNumber <= 0) ? 0 : 1;
+                    int maxKey = mMaxNumber <= 9 ? mMaxNumber : 9;
+                    setKeyRange(minKey, maxKey);
+                } else {
+                    number = mMaxNumber - (number * 10);
+                    int minKey = 0;
+                    int maxKey = number >= 0 ? (number <= 9 ? number : 9) : -1;
+                    setKeyRange(minKey, maxKey);
+                }
             } else {
-                number = mMaxNumber - (number * 10);
-                int minKey = 0;
-                int maxKey = number >= 0 ? (number <= 9 ? number : 9) : -1;
-                setKeyRange(minKey, maxKey);
+                int usedMin = 0;
+                mSteppingList = new ArrayList<Integer>();
+                if (mMinNumber == null) {
+                    mMinNumber = 0;
+                }
+                if (mMaxNumber == null) {
+                    mMaxNumber = Integer.MAX_VALUE;
+                }
+                usedMin = mMinNumber;
+                if (number > 0) {
+                    usedMin = number * 10;
+
+                    if (usedMin > mMaxNumber) { //Can't be higher than MaxNumber
+                        usedMin = mMaxNumber - mStepping;
+                    }
+                }
+                //Get start and end values for the Stepping lists
+                int startValue = (int) Math.ceil(usedMin / (float) mStepping);
+                int endValue = (int) Math.floor(mMaxNumber / (float) mStepping);
+                for (int i = startValue; i <= endValue; i++) {
+                    mSteppingList.add(i * mStepping);
+                }
+
+                //If we have values which have one digit less than MaxNumber and adding a digit would
+                //exceed the limit, just disable all keys
+                if (getNumber() * 10 > mMaxNumber) {
+                    disableAllKeys();
+                    return;
+                }
+
+                HashSet<Integer> possibleDigits = new HashSet<Integer>(); //Stores the possible digits
+                for (int j = getDigitCount(getNumber()) - 1; j <= (getDigitCount(mMaxNumber) -
+                        getEnteredNumberString().length()); j++) { //Loop through all possible digit positions
+                    int toAdd;
+                    for (int i = 0; i < mSteppingList.size(); i++) {
+                        int num = mSteppingList.get(i);
+                        if (j > 1) {
+                            toAdd = (int) (Math.floor(num / Math.pow(10, j - 1)) -
+                                    10 * Math.floor(num / Math.pow(10, j)));
+                        } else {
+                            toAdd = num % 10;
+                        }
+                        if (toAdd >= 0) { // Safety to prevent adding signed values
+                            possibleDigits.add(toAdd);
+                        }
+                    }
+                }
+                setKeys(possibleDigits);
+                mSteppingList = null;
             }
         }
     }
 
-    // enables a range of numeric keys from minKey to maxKey. The rest of the keys will be disabled
+    /**
+     * enables a range of numeric keys from minKey to maxKey. The rest of the keys will be disabled
+     *
+     * @param minKey
+     * @param maxKey
+     */
+
     private void setKeyRange(int minKey, int maxKey) {
         for (int i = 0; i < mNumbers.length; i++) {
             mNumbers[i].setEnabled(minKey <= i && i <= maxKey);
         }
+    }
+
+    /**
+     * Enables a specific keys only.
+     *
+     * @param possibleKeys the number of all possible keys
+     */
+    private void setKeys(HashSet<Integer> possibleKeys) {
+        Iterator itr = possibleKeys.iterator();
+        for (int i = 0; i < mNumbers.length; i++) {
+            mNumbers[i].setEnabled(false);
+        }
+        Integer item;
+        while (itr.hasNext()) {
+            item = (Integer) itr.next();
+            mNumbers[item].setEnabled(true);
+        }
+    }
+
+    /**
+     * Disables all keys.
+     */
+    private void disableAllKeys() {
+        for (int i = 0; i < mNumbers.length; i++) {
+            mNumbers[i].setEnabled(false);
+        }
+    }
+
+    /**
+     * @param number the number to count
+     * @return the number of digits
+     */
+    private int getDigitCount(int number) {
+        return String.valueOf(number).length();
     }
 
     /**
@@ -529,8 +639,16 @@ public class NumberPicker extends LinearLayout implements Button.OnClickListener
         }
 
         // If the value is too low
-        if(mMinNumber != null) {
-            if(getNumber() < mMinNumber) {
+        if (mMinNumber != null) {
+            if (getNumber() < mMinNumber) {
+                mSetButton.setEnabled(false);
+                return;
+            }
+        }
+
+        // If the value is too high
+        if (mMaxNumber != null) {
+            if (getNumber() > mMaxNumber) {
                 mSetButton.setEnabled(false);
                 return;
             }

@@ -19,21 +19,23 @@ public class SampleNumberWithOptions extends BaseSampleActivity
     private static final int BUTTON_ONE_REFERENCE = 0;
     private static final int BUTTON_TWO_REFERENCE = 1;
     private static final int BUTTON_THREE_REFERENCE = 2;
+    private static final int BUTTON_FOUR_REFERENCE = 3;
 
     private TextView text;
-    private Button buttonOne, buttonTwo, buttonThree;
+    private Button buttonOne, buttonTwo, buttonThree, buttonFour;
 
-    private Integer mMin, mMax;
+    private Integer mMin, mMax, mStepping;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.text_and_three_buttons);
+        setContentView(R.layout.text_and_four_buttons);
 
         text = (TextView) findViewById(R.id.text);
         buttonOne = (Button) findViewById(R.id.button_one);
         buttonTwo = (Button) findViewById(R.id.button_two);
         buttonThree = (Button) findViewById(R.id.button_three);
+        buttonFour = (Button) findViewById(R.id.button_four);
 
         text.setText("--");
         buttonOne.setText("Set Number");
@@ -52,6 +54,9 @@ public class SampleNumberWithOptions extends BaseSampleActivity
                 }
                 if (mMax != null) {
                     npb.setMaxNumber(mMax);
+                }
+                if (mStepping != null) {
+                    npb.setStepping(mStepping);
                 }
                 npb.show();
             }
@@ -82,6 +87,19 @@ public class SampleNumberWithOptions extends BaseSampleActivity
                 npb.show();
             }
         });
+        buttonFour.setText("Set Stepping");
+        buttonFour.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                NumberPickerBuilder npb = new NumberPickerBuilder()
+                        .setFragmentManager(getSupportFragmentManager())
+                        .setStyleResId(R.style.BetterPickersDialogFragment_Light)
+                        .setDecimalVisibility(View.INVISIBLE)
+                        .setReference(BUTTON_FOUR_REFERENCE)
+                        .setLabelText("STEPPING");
+                npb.show();
+            }
+        });
     }
 
     @Override
@@ -100,6 +118,10 @@ public class SampleNumberWithOptions extends BaseSampleActivity
                 mMax = number;
                 buttonThree.setText("Max Number: " + mMax);
                 return;
+            case BUTTON_FOUR_REFERENCE:
+                mStepping = number;
+                buttonFour.setText("Stepping: " + mStepping);
+                break;
             default:
                 break;
         }

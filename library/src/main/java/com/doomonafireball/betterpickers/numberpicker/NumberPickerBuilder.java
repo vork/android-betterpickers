@@ -19,6 +19,7 @@ public class NumberPickerBuilder {
     private Fragment targetFragment;
     private Integer minNumber;
     private Integer maxNumber;
+    private Integer stepping;
     private Integer plusMinusVisibility;
     private Integer decimalVisibility;
     private String labelText;
@@ -89,6 +90,17 @@ public class NumberPickerBuilder {
      */
     public NumberPickerBuilder setMaxNumber(int maxNumber) {
         this.maxNumber = maxNumber;
+        return this;
+    }
+
+    /**
+     * Sets the possible stepping of the number
+     *
+     * @param stepping the required stepping
+     * @return the current Builder object
+     */
+    public NumberPickerBuilder setStepping(int stepping) {
+        this.stepping = stepping;
         return this;
     }
 
@@ -173,7 +185,7 @@ public class NumberPickerBuilder {
         ft.addToBackStack(null);
 
         final NumberPickerDialogFragment fragment = NumberPickerDialogFragment
-                .newInstance(mReference, styleResId, minNumber, maxNumber, plusMinusVisibility, decimalVisibility,
+                .newInstance(mReference, styleResId, minNumber, maxNumber, stepping, plusMinusVisibility, decimalVisibility,
                         labelText);
         if (targetFragment != null) {
             fragment.setTargetFragment(targetFragment, 0);
