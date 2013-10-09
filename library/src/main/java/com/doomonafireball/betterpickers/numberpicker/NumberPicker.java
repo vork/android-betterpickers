@@ -391,17 +391,19 @@ public class NumberPicker extends LinearLayout implements Button.OnClickListener
                 }
 
                 HashSet<Integer> possibleDigits = new HashSet<Integer>(); //Stores the possible digits
-                for (int j = 1; j <= (getDigitCount(mMaxNumber) -
-                        getEnteredNumberString().length()); j++) { //Loop through all possible digit positions
+
+                int loopStart;
+                if(getEnteredNumberString().length() < getDigitCount(mMinNumber) && mMinNumber != 0) {
+                    loopStart = getDigitCount(mMinNumber) - getEnteredNumberString().length();
+                } else {
+                    loopStart = 1;
+                }
+                final int loopEnd = getDigitCount(mMaxNumber) - getEnteredNumberString().length();
+                for (int j = loopStart; j <= loopEnd; j++) { //Loop through all possible digit positions
                     int toAdd;
                     for (int i = 0; i < mSteppingList.size(); i++) {
-                        int num = mSteppingList.get(i);
-                        if (j > 1 && mSteppingList.size() != 1) {
-                            toAdd = (int) (Math.floor(num / Math.pow(10, j - 1)) -
-                                    10 * Math.floor(num / Math.pow(10, j)));
-                        } else {
-                            toAdd = num % 10;
-                        }
+                        final int num = mSteppingList.get(i);
+                        toAdd = getNthDigit(num, j);
                         if (toAdd >= 0) { // Safety to prevent adding signed values
                             possibleDigits.add(toAdd);
                         }
@@ -457,7 +459,18 @@ public class NumberPicker extends LinearLayout implements Button.OnClickListener
      * @return the number of digits
      */
     private int getDigitCount(int number) {
-        return String.valueOf(number).length();
+        return number == 0 ? 1 : (1 + (int) Math.floor(Math.log10(Math.abs(number))));
+    }
+
+    /**
+     * Returns the nth digit of an integer
+     *
+     * @param number the number
+     * @param n      the specific digit
+     * @return the nth digit
+     */
+    public int getNthDigit(int number, int n) {
+        return (int) ((number / Math.pow(10, n - 1)) % 10);
     }
 
     /**
